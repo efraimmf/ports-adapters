@@ -7,3 +7,29 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password String
+  bookings  Booking[]
+}
+
+model Booking {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  resourceId  Int
+  date        DateTime
+
+  user        User      @relation(fields: [userId], references: [id])
+  resource    Resource  @relation(fields: [resourceId], references: [id])
+}
+
+model Resource {
+  id        Int       @id @default(autoincrement())
+  name      String
+  location  String
+  bookings  Booking[]
+}
