@@ -28,13 +28,13 @@ src/
 ├── infra/                 # Camada de infraestrutura
 │   ├── prisma/           # Configuração do Prisma
 │   └── repositories/     # Implementações dos repositórios
+├── modules/             # Módulos do NestJS
 ├── presentation/         # Camada de apresentação
 │   ├── controllers/      # Controllers HTTP
 │   ├── dtos/            # Data Transfer Objects
 │   ├── filters/         # Exception filters
 │   └── guards/          # Guards de autenticação/autorização
 ├── shared/              # Código compartilhado
-│   ├── modules/         # Módulos compartilhados
 │   └── utils/           # Utilitários gerais
 ├── app.module.ts        # Módulo principal da aplicação
 └── main.ts              # Ponto de entrada da aplicação
@@ -104,8 +104,11 @@ model Resource {
 - **DTOs**: Validação de entrada e saída
 - **Filters/Guards**: Tratamento de erros e autenticação
 
-### 4. Shared (Compartilhado)
-- **Modules**: Configuração de injeção de dependências do NestJS
+### 4. Modules (Configuração NestJS)
+- **Modules**: Configuração de injeção de dependências e organização de features
+
+### 5. Shared (Compartilhado)
+- **Utils**: Utilitários e helpers compartilhados entre camadas
 
 ## Fluxo de Dados
 
@@ -425,7 +428,7 @@ Após implementar todas as camadas do core e infraestrutura, é necessário conf
 
 ### UserModule
 ```typescript
-// src/shared/modules/user.module.ts
+// src/modules/user.module.ts
 import { Module } from '@nestjs/common';
 import { UserController } from '../../presentation/controllers/user.controller';
 import { UserService } from '../../core/services/user.service';
