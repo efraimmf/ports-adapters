@@ -8,18 +8,16 @@ Este projeto implementa uma **Arquitetura Hexagonal (Ports and Adapters)** para 
 
 ### Princípios Fundamentais
 
-### Princípios Fundamentais
-
 A arquitetura hexagonal organiza a aplicação em dois grandes domínios:
 
-**Núcleo (Core) e Portas (Ports):**
+#### Núcleo (Core) e Portas (Ports)
 Essa camada representa o coração da aplicação, onde estão localizadas as regras de negócio e a lógica que define o comportamento do sistema. As "portas" são interfaces que expõem as funcionalidades do domínio e definem como os adaptadores externos podem interagir com o núcleo. Essa estrutura garante que o core seja independente de detalhes de infraestrutura, como frameworks, bancos de dados ou interfaces de usuário.
 
-**Adaptadores (Adapters):**
+#### Adaptadores (Adapters)
 São implementações concretas que "plugam" nas portas definidas pelo core, permitindo que o sistema se comunique com o mundo externo. Esses adaptadores podem ser substituídos com facilidade, sem impactar a lógica de negócio. Exemplos comuns incluem:
-* Persistência de dados (como, Postgres ou MySQL)
-* Interfaces de apresentação (como, HTTP ou SOAP)
-* Serviços externos (como, APIs ou serviços de mensageria)
+- Persistência de dados (como Postgres ou MySQL)
+- Interfaces de apresentação (como HTTP ou SOAP)  
+- Serviços externos (como APIs ou serviços de mensageria)
 
 Essa separação de responsabilidades contribui para um sistema mais desacoplado, modular e com baixo custo de manutenção.
 
@@ -27,13 +25,13 @@ Essa separação de responsabilidades contribui para um sistema mais desacoplado
 
 Seguindo os princípios acima, este repositório foi estruturado em três camadas principais:
 
-**Core (Domínio):**
+#### Core (Domínio)
 Contém toda a lógica de negócio da aplicação. É onde estão definidos os casos de uso, entidades, serviços de domínio e as interfaces (portas) que abstraem a comunicação com o exterior.
 
-**Infrastructure (Infraestrutura):**
+#### Infrastructure (Infraestrutura)
 Implementa as interfaces responsáveis pela persistência de dados definidas no core.
 
-**Presentation (Apresentação):**
+#### Presentation (Apresentação)
 Implementa as interfaces responsáveis pela apresentação e obtenção dos dados do usuário definidas no core.
 
 Essa estrutura permite que o core da aplicação seja reutilizado em diferentes contextos, com diferentes tecnologias, sem a necessidade de reescrita da lógica de negócio. Ao passo que também possibilita que toda a aplicação seja testada em partes isoladas, garantindo a separação clara de responsabilidades, a testabilidade e a manutenibilidade do código.
