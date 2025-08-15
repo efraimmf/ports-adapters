@@ -1,98 +1,405 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Ports & Adapters Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Visão Geral
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Este projeto implementa uma **Arquitetura Hexagonal (Ports and Adapters)** para uma aplicação backend moderna construída com **NestJS**, **TypeScript**, **Prisma** e **PostgreSQL**. A arquitetura garante separação clara de responsabilidades, testabilidade e manutenibilidade do código.
 
-## Description
+## Arquitetura Hexagonal
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Princípios Fundamentais
 
-## Project setup
+A arquitetura hexagonal divide a aplicação em três camadas principais:
 
-```bash
-$ npm install
+- **Core (Domínio)**: Lógica de negócio e regras da aplicação
+- **Infrastructure (Infraestrutura)**: Implementações concretas de interfaces externas  
+- **Presentation (Apresentação)**: Controllers, DTOs e filtros de entrada
+
+### Estrutura de Diretórios
+
+```
+src/
+├── core/                   # Camada de domínio (núcleo da aplicação)
+│   ├── domain/            # Entidades e objetos de valor
+│   ├── ports/             # Contratos e abstrações
+│   │   ├── repositories/  # Interfaces de repositórios
+│   │   └── services/      # Interfaces dos serviços de aplicação
+│   ├── services/          # Serviços de domínio e casos de uso
+│   └── exceptions/        # Exceções específicas do domínio
+├── infra/                 # Camada de infraestrutura
+│   ├── prisma/           # Configuração do Prisma
+│   └── repositories/     # Implementações dos repositórios
+├── presentation/         # Camada de apresentação
+│   ├── controllers/      # Controllers HTTP
+│   ├── dtos/            # Data Transfer Objects
+│   ├── filters/         # Exception filters
+│   └── guards/          # Guards de autenticação/autorização
+├── shared/              # Código compartilhado
+│   ├── modules/         # Módulos compartilhados
+│   └── utils/           # Utilitários gerais
+├── app.module.ts        # Módulo principal da aplicação
+└── main.ts              # Ponto de entrada da aplicação
 ```
 
-## Compile and run the project
+## Schema do Banco de Dados
 
-```bash
-# development
-$ npm run start
+O projeto utiliza **Prisma** como ORM e **PostgreSQL** como banco de dados. O schema define um sistema de reservas de recursos:
 
-# watch mode
-$ npm run start:dev
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
 
-# production mode
-$ npm run start:prod
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  bookings  Booking[]
+}
+
+model Booking {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  resourceId  Int
+  date        DateTime
+
+  user        User      @relation(fields: [userId], references: [id])
+  resource    Resource  @relation(fields: [resourceId], references: [id])
+}
+
+model Resource {
+  id        Int       @id @default(autoincrement())
+  name      String
+  location  String
+  bookings  Booking[]
+}
 ```
 
-## Run tests
+### Relacionamentos
+- **User** possui múltiplas **Bookings** (1:N)
+- **Resource** possui múltiplas **Bookings** (1:N)  
+- **Booking** pertence a um **User** e um **Resource** (N:1)
 
-```bash
-# unit tests
-$ npm run test
+## 🔧 Componentes da Arquitetura
 
-# e2e tests
-$ npm run test:e2e
+### 1. Core (Domínio)
+- **Entidades**: User, Booking, Resource
+- **Ports**: Interfaces para repositórios e serviços  
+- **Services**: Lógica de negócio (UserService, BookingService)
+- **Exceptions**: Exceções específicas do domínio
 
-# test coverage
-$ npm run test:cov
+### 2. Infrastructure (Infraestrutura)  
+- **Prisma**: Configuração e cliente do banco
+- **Repositories**: Implementações dos contratos de dados
+
+### 3. Presentation (Apresentação)
+- **Controllers**: Endpoints REST 
+- **DTOs**: Validação de entrada e saída
+- **Filters/Guards**: Tratamento de erros e autenticação
+
+## Fluxo de Dados
+
+### Exemplo: Criação de Usuário
+```
+POST /users → UserController → IUserService → UserService → [cria User do domínio] → UserRepository → PrismaUserRepository → Prisma → PostgreSQL
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+### Exemplo: Listagem de Usuários
+```
+GET /users → UserController → IUserService → UserService → UserRepository → PrismaUserRepository → Prisma → PostgreSQL
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Tratamento de Erros
+```
+DomainException → GlobalExceptionFilter → HTTP Response (padronizado)
+```
 
-## Resources
+## Benefícios da Arquitetura
 
-Check out a few resources that may come in handy when working with NestJS:
+### 1. **Separação de Responsabilidades**
+- Domínio isolado de detalhes técnicos
+- Lógica de negócio independente de frameworks
+- Interfaces claras entre camadas
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 2. **Testabilidade**
+- Mock repositories para testes unitários
+- Injeção de dependências facilita testes
+- Domínio testável sem infraestrutura
 
-## Support
+### 3. **Manutenibilidade**
+- Código organizado por responsabilidade
+- Mudanças isoladas por camada
+- Documentação clara de cada componente
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### 4. **Flexibilidade**
+- Fácil troca de implementações (Prisma → TypeORM)
+- Suporte a diferentes bancos de dados
+- Configuração por ambiente
 
-## Stay in touch
+### 5. **Escalabilidade**
+- Estrutura preparada para crescimento
+- Padrões consistentes do NestJS
+- Microserviços friendly
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Padrões Utilizados
 
-## License
+### 1. **Repository Pattern**
+- Abstração de acesso a dados
+- Implementações específicas por ORM
+- Contratos claros via interfaces
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### 2. **Service Layer**
+- Lógica de negócio centralizada
+- Orquestração de operações
+- Validações e regras de domínio
+
+### 3. **Dependency Injection**
+- Inversão de controle via NestJS
+- Configuração via decorators
+- Facilita testes e mocks
+
+### 4. **DTO Pattern**
+- Validação de entrada
+- Transformação de dados
+- Serialização de saída
+
+### 5. **Ports and Adapters**
+- Interfaces definem contratos (Ports)
+- Implementações são adaptadores (Adapters)
+- Domínio independente de detalhes técnicos
+
+## Tecnologias Utilizadas
+
+- **Framework**: NestJS
+- **Linguagem**: TypeScript
+- **ORM**: Prisma
+- **Banco**: PostgreSQL
+- **Validação**: class-validator, class-transformer
+- **Testes**: Jest
+- **Documentação**: Swagger/OpenAPI
+
+## Configuração e Execução
+
+### Pré-requisitos
+- Node.js 18+
+- PostgreSQL
+- Docker (opcional)
+
+### Instalação
+```bash
+# Clone o repositório
+git clone <repository-url>
+cd ports-adapters
+
+# Instale as dependências
+npm install
+
+# Suba o banco PostgreSQL com Docker
+docker-compose up -d
+
+# Execute as migrações do banco
+npx prisma migrate dev
+
+# Inicie a aplicação
+npm run start:dev
+```
+
+### Variáveis de Ambiente
+```env
+# PostgreSQL database configuration
+PG_USER=postgres
+PG_PASSWORD=postgres123
+PG_DB=ports_adapters_db
+PG_PORT=5432
+PG_HOST=localhost
+DATABASE_URL="postgresql://${PG_USER}:${PG_PASSWORD}@${PG_HOST}:${PG_PORT}/${PG_DB}"
+```
+
+### Docker
+O projeto inclui configuração Docker para PostgreSQL:
+
+```bash
+# Subir o banco PostgreSQL
+docker-compose up -d
+
+# Verificar status
+docker-compose ps
+
+# Ver logs
+docker-compose logs postgres
+
+# Parar o banco
+docker-compose down
+```
+
+### Scripts Disponíveis
+```bash
+# Desenvolvimento
+npm run start:dev
+
+# Produção
+npm run build
+npm run start:prod
+
+# Testes
+npm run test
+npm run test:e2e
+npm run test:cov
+
+# Banco de dados
+npx prisma studio
+npx prisma migrate dev
+npx prisma generate
+```
+
+## Exemplo de Implementação
+
+### Criando o módulo de Users
+
+#### 1. Definir a Entidade
+```typescript
+// src/core/domain/user.entity.ts
+export class User {
+  constructor(
+    public readonly id: number,
+    public readonly name: string,
+    public readonly email: string,
+    public readonly password: string
+  ) {}
+
+  // Factory method para criação (sem ID)
+  static create(name: string, email: string, password: string): User {
+    // Validações de domínio
+    if (!email.includes('@')) {
+      throw new Error('Invalid email format');
+    }
+    
+    if (password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
+
+    // Para criação, ID será 0 (temporário)
+    return new User(0, name, email, password);
+  }
+
+  // Factory method para reconstrução (com ID do banco)
+  static fromDatabase(id: number, name: string, email: string, password: string): User {
+    return new User(id, name, email, password);
+  }
+}
+```
+
+#### 2. Criar o Port do Repository
+```typescript
+// src/core/ports/repositories/user.repository.ts
+export interface UserRepository {
+  create(user: User): Promise<User>;
+  findById(id: number): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  update(id: number, data: Partial<CreateUserData>): Promise<User>;
+}
+```
+
+#### 3. Criar o Port do Service (Interface)
+```typescript
+// src/core/ports/services/user.service.ts
+export interface IUserService {
+  createUser(data: CreateUserData): Promise<User>;
+  getUserById(id: number): Promise<User>;
+  getUserByEmail(email: string): Promise<User>;
+  changePassword(userId: number, oldPassword: string, newPassword: string): Promise<void>;
+}
+```
+
+#### 4. Implementar o Service
+```typescript
+// src/core/services/user.service.ts
+@Injectable()
+export class UserService implements IUserService {
+  constructor(private readonly userRepository: UserRepository) {}
+
+  async createUser(data: CreateUserData): Promise<User> {
+    // Verificar se email já existe
+    const existingUser = await this.userRepository.findByEmail(data.email);
+    if (existingUser) {
+      throw new ConflictException('Email already exists');
+    }
+
+    // Criar entidade do domínio
+    const user = User.create(data.name, data.email, data.password);
+    
+    // Persistir no banco
+    return this.userRepository.create(user);
+  }
+
+  async getUserById(id: number): Promise<User> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+}
+```
+
+#### 5. Criar o Adapter (Implementação do Repository)
+```typescript
+// src/infra/repositories/prisma-user.repository.ts
+@Injectable()
+export class PrismaUserRepository implements UserRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(user: User): Promise<User> {
+    const createdUser = await this.prisma.user.create({
+      data: {
+        name: user.name,
+        email: user.email,
+        password: user.password
+      }
+    });
+    
+    // Usa o factory method para reconstruir com ID do banco
+    return User.fromDatabase(createdUser.id, createdUser.name, createdUser.email, createdUser.password);
+  }
+
+  async findById(id: number): Promise<User | null> {
+    const userData = await this.prisma.user.findUnique({ where: { id } });
+    if (!userData) return null;
+    
+    // Reconstroi a entidade a partir dos dados do banco
+    return User.fromDatabase(userData.id, userData.name, userData.email, userData.password);
+  }
+}
+```
+
+#### 6. Configurar o Controller (usa a interface do service)
+```typescript
+// src/presentation/controllers/user.controller.ts
+@Controller('users')
+export class UserController {
+  constructor(private readonly userService: IUserService) {} // Usa a interface!
+
+  @Post()
+  async create(@Body() createUserDto: CreateUserDto) {
+    return this.userService.createUser(createUserDto);
+  }
+
+  @Get(':id')
+  async getById(@Param('id') id: string) {
+    return this.userService.getUserById(+id);
+  }
+}
+```
+
+## Conclusão
+
+Esta arquitetura hexagonal proporciona uma base sólida para desenvolvimento de aplicações backend escaláveis e maintíveis. A separação clara de responsabilidades, combinada com os recursos do NestJS, oferece uma experiência de desenvolvimento produtiva e um código de alta qualidade.
+
+A estrutura permite fácil evolução do projeto, adição de novas funcionalidades e manutenção a longo prazo, mantendo sempre a independência do domínio em relação aos detalhes de implementação.
