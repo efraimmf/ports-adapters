@@ -104,6 +104,9 @@ model Resource {
 - **DTOs**: Validação de entrada e saída
 - **Filters/Guards**: Tratamento de erros e autenticação
 
+### 4. Shared (Compartilhado)
+- **Modules**: Configuração de injeção de dependências do NestJS
+
 ## Fluxo de Dados
 
 ### Exemplo: Criação de Usuário
@@ -296,7 +299,26 @@ export class User {
 }
 ```
 
-#### 2. Criar o Port do Repository
+#### 2. Definir Exceptions do Domínio
+```typescript
+// src/core/exceptions/user-not-found.exception.ts
+export class UserNotFoundException extends Error {
+  constructor(userId: number) {
+    super(`User with ID ${userId} not found`);
+    this.name = 'UserNotFoundException';
+  }
+}
+
+// src/core/exceptions/user-already-exists.exception.ts
+export class UserAlreadyExistsException extends Error {
+  constructor(email: string) {
+    super(`User with email ${email} already exists`);
+    this.name = 'UserAlreadyExistsException';
+  }
+}
+```
+
+#### 3. Criar o Port do Repository
 ```typescript
 // src/core/ports/repositories/user.repository.ts
 export interface UserRepository {
@@ -329,27 +351,27 @@ export class UserService implements IUserService {
     // Verificar se email já existe
     const existingUser = await this.userRepository.findByEmail(data.email);
     if (existingUser) {
-      throw new ConflictException('Email already exists');
+      throw new UserAlreadyExistsException(data.email);
     }
 
     // Criar entidade do domínio
     const user = User.create(data.name, data.email, data.password);
     
     // Persistir no banco
-    return this.userRepository.create(user);
+    return await this.userRepository.create(user);
   }
 
   async getUserById(id: number): Promise<User> {
     const user = await this.userRepository.findById(id);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new UserNotFoundException(id);
     }
     return user;
   }
 }
 ```
 
-#### 5. Criar o Adapter (Implementação do Repository)
+#### 5. Criar o Adapter (Repository Implementation)
 ```typescript
 // src/infra/repositories/prisma-user.repository.ts
 @Injectable()
@@ -397,6 +419,41 @@ export class UserController {
   }
 }
 ```
+
+## Configuração do NestJS Module
+
+Após implementar todas as camadas do core e infraestrutura, é necessário configurar o módulo do NestJS para fazer a injeção de dependências:
+
+### UserModule
+```typescript
+// src/shared/modules/user.module.ts
+import { Module } from '@nestjs/common';
+import { UserController } from '../../presentation/controllers/user.controller';
+import { UserService } from '../../core/services/user.service';
+import { IUserService } from '../../core/ports/services/user-service.interface';
+import { UserRepository } from '../../core/ports/repositories/user.repository';
+import { PrismaUserRepository } from '../../infra/repositories/prisma-user.repository';
+import { PrismaModule } from '../../infra/prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [UserController],
+  providers: [
+    {
+      provide: IUserService,
+      useClass: UserService,
+    },
+    {
+      provide: UserRepository,
+      useClass: PrismaUserRepository,
+    },
+  ],
+  exports: [IUserService],
+})
+export class UserModule {}
+```
+
+> **Nota**: O módulo conecta todas as camadas, respeitando os contratos definidos pelas interfaces (ports) e mantendo a inversão de dependências.
 
 ## Conclusão
 
