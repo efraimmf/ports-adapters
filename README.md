@@ -8,18 +8,42 @@ Este projeto implementa uma **Arquitetura Hexagonal (Ports and Adapters)** para 
 
 ### Princípios Fundamentais
 
-A arquitetura hexagonal divide a aplicação em três camadas principais:
+### Princípios Fundamentais
 
-- **Core (Domínio)**: Lógica de negócio e regras da aplicação
-- **Infrastructure (Infraestrutura)**: Implementações concretas de interfaces externas  
-- **Presentation (Apresentação)**: Controllers, DTOs e filtros de entrada
+A arquitetura hexagonal organiza a aplicação em dois grandes domínios:
+
+**Núcleo (Core) e Portas (Ports):**
+Essa camada representa o coração da aplicação, onde estão localizadas as regras de negócio e a lógica que define o comportamento do sistema. As "portas" são interfaces que expõem as funcionalidades do domínio e definem como os adaptadores externos podem interagir com o núcleo. Essa estrutura garante que o core seja independente de detalhes de infraestrutura, como frameworks, bancos de dados ou interfaces de usuário.
+
+**Adaptadores (Adapters):**
+São implementações concretas que "plugam" nas portas definidas pelo core, permitindo que o sistema se comunique com o mundo externo. Esses adaptadores podem ser substituídos com facilidade, sem impactar a lógica de negócio. Exemplos comuns incluem:
+* Persistência de dados (como, Postgres ou MySQL)
+* Interfaces de apresentação (como, HTTP ou SOAP)
+* Serviços externos (como, APIs ou serviços de mensageria)
+
+Essa separação de responsabilidades contribui para um sistema mais desacoplado, modular e com baixo custo de manutenção.
+
+### Organização do Projeto
+
+Seguindo os princípios acima, este repositório foi estruturado em três camadas principais:
+
+**Core (Domínio):**
+Contém toda a lógica de negócio da aplicação. É onde estão definidos os casos de uso, entidades, serviços de domínio e as interfaces (portas) que abstraem a comunicação com o exterior.
+
+**Infrastructure (Infraestrutura):**
+Implementa as interfaces responsáveis pela persistência de dados definidas no core.
+
+**Presentation (Apresentação):**
+Implementa as interfaces responsáveis pela apresentação e obtenção dos dados do usuário definidas no core.
+
+Essa estrutura permite que o core da aplicação seja reutilizado em diferentes contextos, com diferentes tecnologias, sem a necessidade de reescrita da lógica de negócio. Ao passo que também possibilita que toda a aplicação seja testada em partes isoladas, garantindo a separação clara de responsabilidades, a testabilidade e a manutenibilidade do código.
 
 ### Estrutura de Diretórios
 
 ```
 src/
 ├── core/                   # Camada de domínio (núcleo da aplicação)
-│   ├── domain/            # Entidades e objetos de valor
+│   ├── domain/            # Entidades de domínio
 │   ├── ports/             # Contratos e abstrações
 │   │   ├── repositories/  # Interfaces de repositórios
 │   │   └── services/      # Interfaces dos serviços de aplicação
@@ -34,8 +58,6 @@ src/
 │   ├── dtos/            # Data Transfer Objects
 │   ├── filters/         # Exception filters
 │   └── guards/          # Guards de autenticação/autorização
-├── shared/              # Código compartilhado
-│   └── utils/           # Utilitários gerais
 ├── app.module.ts        # Módulo principal da aplicação
 └── main.ts              # Ponto de entrada da aplicação
 ```
@@ -106,9 +128,6 @@ model Resource {
 
 ### 4. Modules (Configuração NestJS)
 - **Modules**: Configuração de injeção de dependências e organização de features
-
-### 5. Shared (Compartilhado)
-- **Utils**: Utilitários e helpers compartilhados entre camadas
 
 ## Fluxo de Dados
 
