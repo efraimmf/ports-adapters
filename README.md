@@ -181,12 +181,11 @@ DomainException → GlobalExceptionFilter → HTTP Response (padronizado)
 ## Tecnologias Utilizadas
 
 - **Framework**: NestJS
-- **Linguagem**: TypeScript
+- **Linguagem**: TypeScript  
 - **ORM**: Prisma
 - **Banco**: PostgreSQL
-- **Validação**: class-validator, class-transformer
-- **Testes**: Jest
-- **Documentação**: Swagger/OpenAPI
+- **Testes**: Jest (configurado)
+- **Linting**: ESLint + Prettier
 
 ## Configuração e Execução
 
